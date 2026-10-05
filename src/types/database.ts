@@ -96,10 +96,10 @@ export interface StudentSubject {
   qualification: SubjectQualification;
   exam_board: ExamBoard;
   programme_type?: import('./curriculum').ProgrammeType;
-  specification_id?: string;
-  specification_code?: string;
-  tier?: SubjectTier;
-  target_exam_year?: number;
+  specification_id?: string | null;
+  specification_code?: string | null;
+  tier?: SubjectTier | null;
+  target_exam_year?: number | null;
   status: SubjectStatus;
   created_at: string;
   updated_at: string;

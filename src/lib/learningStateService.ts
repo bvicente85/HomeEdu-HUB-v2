@@ -9,7 +9,7 @@ import {
   GapStatus,
   ConfidenceLevel,
 } from '../types/learningState';
-import { getSupabaseClient, isSupabaseReachable } from './supabase';
+import { getSupabaseClient, isSupabaseReachable, isProductionEnvironment } from './supabase';
 
 const LOCAL_STORAGE_KEY_STATES = 'homeedu_learning_states_v1';
 const LOCAL_STORAGE_KEY_EVIDENCE = 'homeedu_learning_evidence_v1';
@@ -176,7 +176,29 @@ export const learningStateService = {
       try {
         const supabase = getSupabaseClient()!;
 
-        // 1. Check existing state to preserve previous state in history
+        // 1. Try atomic PostgreSQL RPC function first
+        const { data: rpcData, error: rpcErr } = await supabase.rpc(
+          'record_parent_learning_override',
+          {
+            p_student_id: studentId,
+            p_learning_objective_id: learningObjectiveId,
+            p_new_mastery_state: newMasteryState,
+            p_new_gap_status: newGapStatus,
+            p_confidence_level: confidenceLevel,
+            p_notes: notes.trim(),
+          }
+        );
+
+        if (!rpcErr && rpcData) {
+          const payload = rpcData as {
+            state: StudentLearningState;
+            evidence: LearningEvidence;
+            history: LearningStateHistory;
+          };
+          return payload;
+        }
+
+        // 2. Sequential fallback if RPC is not yet registered in remote cache
         const { data: existingState } = await supabase
           .from('student_learning_states')
           .select('*')
@@ -189,10 +211,8 @@ export const learningStateService = {
         const currentEvidenceCount = ((existingState as StudentLearningState)?.evidence_count || 0) + 1;
         const resolvedStateId = existingState?.id || stateId;
 
-        // 2. Insert Evidence
         await supabase.from('learning_evidence').insert(newEvidence);
 
-        // 3. Upsert State
         const targetStatePayload = {
           id: resolvedStateId,
           student_id: studentId,
@@ -220,7 +240,6 @@ export const learningStateService = {
           throw stateErr;
         }
 
-        // 4. Insert History Record
         const newHistory: LearningStateHistory = {
           id: historyId,
           learning_state_id: resolvedStateId,
@@ -244,6 +263,9 @@ export const learningStateService = {
           history: newHistory,
         };
       } catch (err) {
+        if (isProductionEnvironment()) {
+          throw err;
+        }
         console.warn('recordParentOverride live insert fallback to local store:', err);
       }
     }
@@ -440,5 +462,45 @@ export const learningStateService = {
     saveLocalStore(LOCAL_STORAGE_KEY_TARGETS, localTargets);
 
     return newSession;
+  },
+
+  /**
+   * Records an individual student assessment attempt with semantic cross-validation.
+   */
+  async recordAssessmentAttempt(
+    attempt: Omit<AssessmentAttempt, 'id' | 'created_at'>
+  ): Promise<AssessmentAttempt> {
+    const now = new Date().toISOString();
+    const attemptId = crypto.randomUUID();
+
+    const record: AssessmentAttempt = {
+      id: attemptId,
+      ...attempt,
+      created_at: now,
+    };
+
+    if (isSupabaseReachable()) {
+      try {
+        const supabase = getSupabaseClient()!;
+        const { data, error } = await supabase
+          .from('assessment_attempts')
+          .insert(record)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return (data as AssessmentAttempt) || record;
+      } catch (err) {
+        if (isProductionEnvironment()) {
+          throw err;
+        }
+        console.warn('recordAssessmentAttempt fallback to local store:', err);
+      }
+    }
+
+    const localAttempts = getLocalStore<AssessmentAttempt>(LOCAL_STORAGE_KEY_ATTEMPTS);
+    localAttempts.unshift(record);
+    saveLocalStore(LOCAL_STORAGE_KEY_ATTEMPTS, localAttempts);
+    return record;
   },
 };

@@ -285,6 +285,35 @@ export interface AssessmentItem {
   source_id?: string;
   verification_status: VerificationStatus;
   notes?: string;
+  content?: AssessmentItemContent[];
+  created_at: string;
+  updated_at: string;
+}
+
+export type AssessmentContentFormat = 'MULTIPLE_CHOICE' | 'SHORT_NUMERIC' | 'EXACT_EXPRESSION';
+
+export type AssessmentSourceType = 'ORIGINAL_HOMEEDU' | 'OFFICIAL_SOURCE' | 'OPEN_LICENSED' | 'DERIVED_ADAPTATION';
+
+export interface AssessmentOption {
+  id: string;
+  text: string;
+  distractor_rationale?: string;
+}
+
+export interface AssessmentItemContent {
+  id: string;
+  assessment_item_id: string;
+  version: string;
+  content_format: AssessmentContentFormat;
+  prompt: string;
+  options?: AssessmentOption[] | null;
+  canonical_answer: string;
+  answer_tolerance?: number | null;
+  answer_unit?: string | null;
+  equivalent_representations?: string[] | null;
+  source_type: AssessmentSourceType;
+  verification_status: VerificationStatus;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }

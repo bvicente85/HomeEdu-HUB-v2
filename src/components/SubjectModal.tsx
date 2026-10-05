@@ -50,7 +50,7 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
       setSubjectName(subject.subject_name);
       setQualification(subject.qualification);
       setExamBoard(subject.exam_board);
-      setSpecificationId(subject.specification_id);
+      setSpecificationId(subject.specification_id || undefined);
       setSpecificationCode(subject.specification_code || '');
       setTier(subject.tier || 'Not applicable');
       setTargetExamYear(subject.target_exam_year || '');

@@ -92,46 +92,45 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
       return;
     }
 
+    // Require explicit specification_id binding - NO fallbacks or fuzzy matching
+    if (!activeSubject.specification_id) {
+      setAvailableObjectives([]);
+      setInspectedObjectiveId(null);
+      return;
+    }
+
     try {
-      const allSpecs = await curriculumService.getSpecifications();
-      // Match by specification_id or fallback to Edexcel Mathematics 1MA1 default slice
-      const spec =
-        allSpecs.find((s) => s.id === activeSubject.specification_id) ||
-        allSpecs.find(
-          (s) =>
-            s.title.toLowerCase().includes(activeSubject.subject_name.toLowerCase()) ||
-            s.specification_code.toLowerCase().includes(activeSubject.subject_name.toLowerCase())
-        ) ||
-        allSpecs[0]; // Edexcel GCSE 1MA1 vertical slice
+      const detail = await curriculumService.getSpecificationDetail(activeSubject.specification_id);
+      if (detail) {
+        const loAccumulator: (LearningObjective & {
+          conceptTitle?: string;
+          topicTitle?: string;
+        })[] = [];
 
-      if (spec) {
-        const detail = await curriculumService.getSpecificationDetail(spec.id);
-        if (detail) {
-          const loAccumulator: (LearningObjective & {
-            conceptTitle?: string;
-            topicTitle?: string;
-          })[] = [];
-
-          detail.topics.forEach((t) => {
-            t.concepts.forEach((c) => {
-              c.learning_objectives.forEach((lo) => {
-                loAccumulator.push({
-                  ...lo,
-                  conceptTitle: c.title,
-                  topicTitle: t.title,
-                });
+        detail.topics.forEach((t) => {
+          t.concepts.forEach((c) => {
+            c.learning_objectives.forEach((lo) => {
+              loAccumulator.push({
+                ...lo,
+                conceptTitle: c.title,
+                topicTitle: t.title,
               });
             });
           });
+        });
 
-          setAvailableObjectives(loAccumulator);
-          if (loAccumulator.length > 0 && !inspectedObjectiveId) {
-            setInspectedObjectiveId(loAccumulator[0].id);
-          }
+        setAvailableObjectives(loAccumulator);
+        if (loAccumulator.length > 0 && !inspectedObjectiveId) {
+          setInspectedObjectiveId(loAccumulator[0].id);
         }
+      } else {
+        setAvailableObjectives([]);
+        setInspectedObjectiveId(null);
       }
     } catch (err) {
       console.error('Failed to load curriculum objectives for subject:', err);
+      setAvailableObjectives([]);
+      setInspectedObjectiveId(null);
     }
   }, [activeSubject, inspectedObjectiveId]);
 
@@ -270,7 +269,7 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
     await learningStateService.createDiagnosticSession({
       studentId: student.id,
       studentSubjectId: activeSubject?.id,
-      specificationId: activeSubject?.specification_id,
+      specificationId: activeSubject?.specification_id || undefined,
       title: params.title,
       purpose: params.purpose,
       targetObjectives: params.selectedObjectiveIds.map((loId) => ({
@@ -440,7 +439,22 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
       </div>
 
       {/* Main Content Area */}
-      {activeTab === 'objectives' && (
+      {!activeSubject?.specification_id ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center space-y-3 shadow-2xs">
+          <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-amber-900">
+            Curriculum Specification Not Configured
+          </h3>
+          <p className="text-xs text-amber-800 max-w-lg mx-auto">
+            This subject (<strong>{activeSubject?.subject_name}</strong> - {activeSubject?.exam_board}) does not have an explicit curriculum specification bound. Diagnostic sessions and learning objective ledgers require an authoritative specification binding.
+          </p>
+          <div className="text-2xs text-amber-700 bg-amber-100/80 p-3 rounded max-w-md mx-auto border border-amber-200">
+            <strong>Active Vertical Slice:</strong> Pearson Edexcel GCSE (9-1) Mathematics (1MA1). Select Mathematics in the subject bar above to inspect verified diagnostic objectives.
+          </div>
+        </div>
+      ) : activeTab === 'objectives' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Objectives Master List */}
           <div className="lg:col-span-7 bg-white rounded-lg border border-stone-200 shadow-2xs overflow-hidden">
@@ -722,10 +736,7 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
             )}
           </div>
         </div>
-      )}
-
-      {/* Diagnostics Sessions Tab */}
-      {activeTab === 'diagnostics' && (
+      ) : activeTab === 'diagnostics' ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-stone-200">
             <div>
@@ -822,7 +833,7 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Parent Override Modal */}
       {overrideModalLo && (

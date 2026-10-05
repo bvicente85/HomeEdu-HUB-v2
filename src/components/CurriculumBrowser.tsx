@@ -639,50 +639,146 @@ export const CurriculumBrowser: React.FC = () => {
                 </div>
               </div>
 
-              {/* Structural Item Models (No Copyrighted Content) */}
-              <div className="border border-stone-200 rounded-lg p-4 bg-white space-y-3">
-                <div className="flex items-center justify-between">
+              {/* Diagnostic Item Bank (Phase 2C.1 Original Content) */}
+              <div className="border border-stone-200 rounded-lg p-4 bg-white space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h3 className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
-                      Assessment Item Structural Schema (Phase 2A)
+                      Original Diagnostic Item Bank (Phase 2C.1)
                     </h3>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      Represents item metadata, target grade demand, and AO attribution without reproducing copyrighted past-paper content.
+                      Deterministic, non-copyrighted diagnostic items authored specifically for HomeEdu Hub to assess individual learning objectives.
                     </p>
                   </div>
-                  <span className="text-2xs px-2 py-0.5 rounded font-mono bg-stone-100 text-stone-700">
-                    {specDetail.assessment_items?.length || 0} Structural Archetypes
+                  <span className="text-2xs px-2.5 py-1 rounded font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {specDetail.assessment_items?.length || 0} Original Diagnostic Items
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  {specDetail.assessment_items?.map((item) => (
-                    <div key={item.id} className="p-3 border border-stone-200 rounded-md bg-stone-50/50 space-y-2">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-stone-900">{item.item_reference}</span>
-                          <span className="text-3xs px-1.5 py-0.5 rounded font-medium bg-stone-200 text-stone-800">
-                            {item.tier} Tier
-                          </span>
-                          <span className="text-3xs px-1.5 py-0.5 rounded font-medium bg-stone-200 text-stone-800">
-                            {item.item_type}
-                          </span>
-                          {item.is_common_targeted_question && (
-                            <span className="text-3xs px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                              Common Overlap Question ({'>='}20% Rule)
+                <div className="space-y-4">
+                  {specDetail.assessment_items?.map((item) => {
+                    const content = item.content?.[0];
+                    return (
+                      <div key={item.id} className="p-4 border border-stone-200 rounded-lg bg-stone-50/40 space-y-3 shadow-2xs">
+                        {/* Header Badge Strip */}
+                        <div className="flex items-center justify-between flex-wrap gap-2 border-b border-stone-200/60 pb-2.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs font-bold text-stone-900 bg-white px-2 py-0.5 rounded border border-stone-300">
+                              {item.item_reference}
                             </span>
-                          )}
+                            <span className="text-2xs px-2 py-0.5 rounded font-medium bg-stone-200/80 text-stone-800">
+                              {item.tier} Tier
+                            </span>
+                            <span className="text-2xs px-2 py-0.5 rounded font-medium bg-stone-200/80 text-stone-800">
+                              {content?.content_format || item.item_type}
+                            </span>
+                            {item.target_grade_band && (
+                              <span className="text-2xs px-2 py-0.5 rounded font-medium bg-sky-50 text-sky-800 border border-sky-200">
+                                {item.target_grade_band}
+                              </span>
+                            )}
+                            {item.is_common_targeted_question && (
+                              <span className="text-2xs px-2 py-0.5 rounded font-semibold bg-amber-50 text-amber-900 border border-amber-300">
+                                Common Overlap Question (≥20% Rule)
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-stone-700 bg-stone-100 px-2 py-0.5 rounded">
+                              {item.total_marks} Marks
+                            </span>
+                            <span className="text-3xs px-2 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              {content?.source_type || 'ORIGINAL_HOMEEDU'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-stone-700">{item.total_marks} Marks</span>
-                          {getVerificationBadge(item.verification_status)}
-                        </div>
+
+                        {/* Deliverable Question Prompt */}
+                        {content && (
+                          <div className="space-y-2.5">
+                            <div className="bg-white p-3.5 rounded border border-stone-200 text-xs font-serif text-stone-900 leading-relaxed whitespace-pre-line">
+                              {content.prompt}
+                            </div>
+
+                            {/* Multiple Choice Options with Misconception Distractor Rationales */}
+                            {content.options && content.options.length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-3xs uppercase tracking-wider font-semibold text-stone-500 block">
+                                  Answer Options & Diagnostic Misconception Rationales:
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {content.options.map((opt) => {
+                                    const isCorrect = opt.id === content.canonical_answer;
+                                    return (
+                                      <div
+                                        key={opt.id}
+                                        className={`p-2.5 rounded border text-xs ${
+                                          isCorrect
+                                            ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 font-medium'
+                                            : 'bg-white border-stone-200 text-stone-800'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <span
+                                            className={`font-mono text-2xs font-bold px-1.5 py-0.2 rounded ${
+                                              isCorrect
+                                                ? 'bg-emerald-200 text-emerald-900'
+                                                : 'bg-stone-200 text-stone-700'
+                                            }`}
+                                          >
+                                            {opt.id}
+                                          </span>
+                                          <span>{opt.text}</span>
+                                          {isCorrect && (
+                                            <span className="text-3xs uppercase font-bold text-emerald-700 ml-auto">
+                                              Canonical Key
+                                            </span>
+                                          )}
+                                        </div>
+                                        {opt.distractor_rationale && (
+                                          <p className="text-3xs text-stone-500 italic mt-0.5 leading-snug">
+                                            {opt.distractor_rationale}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Short Numeric or Exact Expression Canonical Answer Key */}
+                            {!content.options && (
+                              <div className="bg-emerald-50/50 p-2.5 rounded border border-emerald-200/80 text-xs flex items-center justify-between flex-wrap gap-2">
+                                <div>
+                                  <span className="text-3xs uppercase tracking-wider font-semibold text-emerald-800 block">
+                                    Canonical Answer Key:
+                                  </span>
+                                  <span className="font-mono font-bold text-emerald-950">
+                                    {content.canonical_answer} {content.answer_unit || ''}
+                                  </span>
+                                  {content.equivalent_representations && (
+                                    <span className="text-3xs text-emerald-700 ml-2">
+                                      (Accepted: {content.equivalent_representations.join(', ')})
+                                    </span>
+                                  )}
+                                </div>
+                                {content.answer_tolerance !== undefined && content.answer_tolerance !== null && (
+                                  <span className="text-3xs text-stone-500 font-mono">
+                                    Tolerance: ±{content.answer_tolerance}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {item.notes && (
+                          <p className="text-2xs text-stone-500 italic">{item.notes}</p>
+                        )}
                       </div>
-                      {item.notes && (
-                        <p className="text-xs text-stone-600 leading-relaxed">{item.notes}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
