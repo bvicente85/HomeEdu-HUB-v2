@@ -16,6 +16,7 @@ import { SubjectModal } from './components/SubjectModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { CurriculumBrowser } from './components/CurriculumBrowser';
 import { LearningStateView } from './components/LearningStateView';
+import { ParentPriorityHub } from './components/parent/ParentPriorityHub';
 import { databaseService } from './lib/databaseService';
 import { Student, StudentSubject } from './types/database';
 import { Loader2 } from 'lucide-react';
@@ -23,7 +24,7 @@ import { Loader2 } from 'lucide-react';
 function HomeEduApp() {
   const { user, profile, role, family, isLoading: authLoading, setStudentPreview, reloadFamily } = useAuth();
 
-  const [currentTab, setCurrentTab] = useState<'today' | 'parent-profile' | 'subjects' | 'learning-state' | 'curriculum' | 'security'>(
+  const [currentTab, setCurrentTab] = useState<'today' | 'parent-profile' | 'subjects' | 'priorities' | 'learning-state' | 'curriculum' | 'security'>(
     role === 'student' ? 'today' : 'parent-profile'
   );
 
@@ -225,6 +226,18 @@ function HomeEduApp() {
             onAddSubject={handleOpenAddSubject}
             onEditSubject={handleOpenEditSubject}
             onDeleteSubject={handleDeleteSubject}
+          />
+        )}
+
+        {currentTab === 'priorities' && (
+          <ParentPriorityHub
+            students={students}
+            selectedStudent={selectedStudent}
+            onSelectStudent={(s) => {
+              setSelectedStudent(s);
+              databaseService.getSubjectsForStudent(s.id).then(setSubjects);
+            }}
+            subjects={subjects}
           />
         )}
 

@@ -70,8 +70,8 @@ export function validateBrowserApiKey(key: string): void {
 }
 
 export function getStoredSupabaseConfig(): { url: string; publishableKey: string } {
-  const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-  const envPublishableKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').trim();
+  const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL : '').trim();
+  const envPublishableKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY ? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY : '').trim();
 
   // Always purge legacy anon/secret keys from localStorage
   if (typeof window !== 'undefined') {

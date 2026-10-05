@@ -122,6 +122,11 @@ BEGIN
         RAISE EXCEPTION 'Content error: No deliverable content found for assessment item %', p_assessment_item_id;
     END IF;
 
+    -- Sanitize/validate support level (audit metadata only, cannot bypass or influence evaluation)
+    IF p_support_level IS NULL OR p_support_level NOT IN ('INDEPENDENT', 'MINOR_SUPPORT', 'SIGNIFICANT_SUPPORT') THEN
+        p_support_level := 'INDEPENDENT';
+    END IF;
+
     v_max_score := COALESCE(v_item.total_marks, 1);
     v_trimmed_response := TRIM(p_submitted_response);
     v_trimmed_canonical := TRIM(v_content.canonical_answer);
@@ -237,13 +242,19 @@ BEGIN
             v_new_demonstrated := CASE WHEN v_eval_result = 'CORRECT' THEN v_now ELSE NULL END;
         END IF;
 
-        -- Conservative transition rule for first vertical slice:
-        -- CORRECT -> SECURE (ON_TRACK)
-        -- INCORRECT -> DEVELOPING (GAP)
+        -- Explicit Server-Authoritative Transition Matrix:
+        -- - Single diagnostic correct answer cannot promote unmastered states to MASTERED (promotes to SECURE)
+        -- - Prior MASTERED state + CORRECT retains MASTERED (ON_TRACK)
+        -- - Any INCORRECT response transitions to DEVELOPING (GAP)
         IF v_eval_result = 'CORRECT' THEN
-            v_new_mastery := 'SECURE';
-            v_new_gap := 'ON_TRACK';
-        ELSE
+            IF v_prev_mastery = 'MASTERED' THEN
+                v_new_mastery := 'MASTERED';
+                v_new_gap := 'ON_TRACK';
+            ELSE
+                v_new_mastery := 'SECURE';
+                v_new_gap := 'ON_TRACK';
+            END IF;
+        ELSE -- INCORRECT / INVALID_RESPONSE
             v_new_mastery := 'DEVELOPING';
             v_new_gap := 'GAP';
         END IF;

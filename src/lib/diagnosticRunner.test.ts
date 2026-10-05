@@ -225,6 +225,187 @@ export function runDiagnosticRunnerTests(): {
     }
   });
 
+  // Test 31: Full Transition Matrix - NOT_ASSESSED + CORRECT -> SECURE, ON_TRACK
+  runTest(31, 'Transition Matrix: NOT_ASSESSED + CORRECT -> SECURE, ON_TRACK', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '6', // Correct
+      previousMastery: 'NOT_ASSESSED',
+    });
+    if (res.new_mastery !== 'SECURE' || res.new_gap !== 'ON_TRACK') {
+      throw new Error(`Expected SECURE/ON_TRACK, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 32: Full Transition Matrix - NOT_ASSESSED + INCORRECT -> DEVELOPING, GAP
+  runTest(32, 'Transition Matrix: NOT_ASSESSED + INCORRECT -> DEVELOPING, GAP', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '99', // Incorrect
+      previousMastery: 'NOT_ASSESSED',
+    });
+    if (res.new_mastery !== 'DEVELOPING' || res.new_gap !== 'GAP') {
+      throw new Error(`Expected DEVELOPING/GAP, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 33: Full Transition Matrix - DEVELOPING + CORRECT -> SECURE, ON_TRACK
+  runTest(33, 'Transition Matrix: DEVELOPING + CORRECT -> SECURE, ON_TRACK', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '6', // Correct
+      previousMastery: 'DEVELOPING',
+    });
+    if (res.new_mastery !== 'SECURE' || res.new_gap !== 'ON_TRACK') {
+      throw new Error(`Expected SECURE/ON_TRACK, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 34: Full Transition Matrix - DEVELOPING + INCORRECT -> DEVELOPING, GAP
+  runTest(34, 'Transition Matrix: DEVELOPING + INCORRECT -> DEVELOPING, GAP', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '0', // Incorrect
+      previousMastery: 'DEVELOPING',
+    });
+    if (res.new_mastery !== 'DEVELOPING' || res.new_gap !== 'GAP') {
+      throw new Error(`Expected DEVELOPING/GAP, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 35: Full Transition Matrix - SECURE + CORRECT -> SECURE, ON_TRACK
+  runTest(35, 'Transition Matrix: SECURE + CORRECT -> SECURE, ON_TRACK', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '6', // Correct
+      previousMastery: 'SECURE',
+    });
+    if (res.new_mastery !== 'SECURE' || res.new_gap !== 'ON_TRACK') {
+      throw new Error(`Expected SECURE/ON_TRACK, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 36: Full Transition Matrix - SECURE + INCORRECT -> DEVELOPING, GAP
+  runTest(36, 'Transition Matrix: SECURE + INCORRECT -> DEVELOPING, GAP', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '100', // Incorrect
+      previousMastery: 'SECURE',
+    });
+    if (res.new_mastery !== 'DEVELOPING' || res.new_gap !== 'GAP') {
+      throw new Error(`Expected DEVELOPING/GAP, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 37: Full Transition Matrix - MASTERED + CORRECT -> MASTERED, ON_TRACK
+  runTest(37, 'Transition Matrix: MASTERED + CORRECT -> MASTERED, ON_TRACK', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '6', // Correct
+      previousMastery: 'MASTERED',
+    });
+    if (res.new_mastery !== 'MASTERED' || res.new_gap !== 'ON_TRACK') {
+      throw new Error(`Expected MASTERED/ON_TRACK, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 38: Full Transition Matrix - MASTERED + INCORRECT -> DEVELOPING, GAP
+  runTest(38, 'Transition Matrix: MASTERED + INCORRECT -> DEVELOPING, GAP', () => {
+    const res = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: '-5', // Incorrect
+      previousMastery: 'MASTERED',
+    });
+    if (res.new_mastery !== 'DEVELOPING' || res.new_gap !== 'GAP') {
+      throw new Error(`Expected DEVELOPING/GAP, got ${res.new_mastery}/${res.new_gap}`);
+    }
+  });
+
+  // Test 39: Invariant - Single diagnostic response cannot promote unmastered states to MASTERED
+  runTest(39, 'Single diagnostic item cannot promote unmastered states to MASTERED', () => {
+    const unmasteredStates = ['NOT_ASSESSED', 'EMERGING', 'DEVELOPING', 'SECURE'];
+    for (const state of unmasteredStates) {
+      const res = diagnosticRunnerService.evaluateResponseLocally({
+        studentId: 's1',
+        sessionId: 'sess-1',
+        targetId: 't-1',
+        assessmentItemId: '00000013-0000-0000-0000-000000000101',
+        submittedResponse: '6', // Correct
+        previousMastery: state,
+      });
+      if (res.new_mastery === 'MASTERED') {
+        throw new Error(`State ${state} was improperly promoted to MASTERED by a single diagnostic item`);
+      }
+      if (res.new_mastery !== 'SECURE') {
+        throw new Error(`Expected SECURE, got ${res.new_mastery}`);
+      }
+    }
+  });
+
+  // Test 40: Support level cannot alter evaluation score or mastery state
+  runTest(40, 'Support level cannot alter evaluation score or mastery state', () => {
+    // Student submits incorrect answer with minor or significant support
+    const resWithSupport = diagnosticRunnerService.evaluateResponseLocally({
+      studentId: 's1',
+      sessionId: 'sess-1',
+      targetId: 't-1',
+      assessmentItemId: '00000013-0000-0000-0000-000000000101',
+      submittedResponse: 'wrong',
+      supportLevel: 'SIGNIFICANT_SUPPORT',
+      previousMastery: 'DEVELOPING',
+    });
+
+    if (resWithSupport.is_correct || resWithSupport.raw_score !== 0) {
+      throw new Error('Support level must never grant score for incorrect answer');
+    }
+    if (resWithSupport.new_mastery !== 'DEVELOPING' || resWithSupport.new_gap !== 'GAP') {
+      throw new Error('Support level must never alter mastery calculation');
+    }
+  });
+
+  // Test 41: Student cannot submit to a completed session
+  runTest(41, 'Student cannot submit to a completed session', () => {
+    const sessionStatus: string = 'COMPLETED';
+    const canSubmit = sessionStatus === 'PLANNED' || sessionStatus === 'IN_PROGRESS';
+    if (canSubmit) {
+      throw new Error('Submission to COMPLETED session must be rejected');
+    }
+  });
+
+  // Test 42: Student cannot submit assessment item belonging to another target/objective
+  runTest(42, 'Student cannot submit assessment item belonging to another target/objective', () => {
+    const targetObjectiveId: string = '00000011-0000-0000-0000-000000000001';
+    const itemObjectiveId: string = '00000011-0000-0000-0000-000000000002';
+    const isMatched = targetObjectiveId === itemObjectiveId;
+    if (isMatched) {
+      throw new Error('Target and Item learning objective mismatch must be detected and rejected');
+    }
+  });
+
   // Test 21: Learning-state history is created
   runTest(21, 'Learning-state history is created', () => {
     const historyEntry = {

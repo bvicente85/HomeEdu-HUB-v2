@@ -3,8 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Database, LogOut, Eye, EyeOff, BookOpen } from 'lucide-react';
 
 interface NavbarProps {
-  currentTab: 'today' | 'parent-profile' | 'subjects' | 'learning-state' | 'curriculum' | 'security';
-  onSelectTab: (tab: 'today' | 'parent-profile' | 'subjects' | 'learning-state' | 'curriculum' | 'security') => void;
+  currentTab: 'today' | 'parent-profile' | 'subjects' | 'priorities' | 'learning-state' | 'curriculum' | 'security';
+  onSelectTab: (tab: 'today' | 'parent-profile' | 'subjects' | 'priorities' | 'learning-state' | 'curriculum' | 'security') => void;
   onOpenConfig: () => void;
 }
 
@@ -91,6 +91,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenC
                   }`}
                 >
                   Subjects & GCSEs
+                </button>
+                <button
+                  onClick={() => onSelectTab('priorities')}
+                  className={`hover:text-stone-900 transition-colors whitespace-nowrap pb-1 border-b-2 ${
+                    currentTab === 'priorities' ? 'border-stone-900 text-stone-900 font-semibold' : 'border-transparent'
+                  }`}
+                >
+                  Focus Areas & Priorities
                 </button>
                 <button
                   onClick={() => onSelectTab('learning-state')}
@@ -199,6 +207,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenC
                 className={`whitespace-nowrap ${currentTab === 'subjects' ? 'text-stone-900 font-semibold' : ''}`}
               >
                 Subjects & GCSEs
+              </button>
+              <button
+                onClick={() => onSelectTab('priorities')}
+                className={`whitespace-nowrap ${currentTab === 'priorities' ? 'text-stone-900 font-semibold' : ''}`}
+              >
+                Priorities
               </button>
               <button
                 onClick={() => onSelectTab('learning-state')}

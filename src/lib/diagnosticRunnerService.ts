@@ -246,7 +246,10 @@ export const diagnosticRunnerService = {
     }
 
     // Local deterministic evaluation fallback for dev environment
-    return this.evaluateResponseLocally(params);
+    return this.evaluateResponseLocally({
+      ...params,
+      supportLevel,
+    });
   },
 
   /**
@@ -258,8 +261,15 @@ export const diagnosticRunnerService = {
     targetId: string;
     assessmentItemId: string;
     submittedResponse: string;
+    previousMastery?: string;
+    supportLevel?: 'INDEPENDENT' | 'MINOR_SUPPORT' | 'SIGNIFICANT_SUPPORT';
   }): DiagnosticSubmissionResult {
-    const { sessionId, assessmentItemId, submittedResponse } = params;
+    const { sessionId, assessmentItemId, submittedResponse, previousMastery, supportLevel = 'INDEPENDENT' } = params;
+
+    // Sanitize support level
+    const sanitizedSupport = ['INDEPENDENT', 'MINOR_SUPPORT', 'SIGNIFICANT_SUPPORT'].includes(supportLevel)
+      ? supportLevel
+      : 'INDEPENDENT';
 
     const item = (REFERENCE_DETAILED_1MA1.assessment_items || []).find((i) => i.id === assessmentItemId);
     const content = item?.content?.[0];
@@ -307,6 +317,22 @@ export const diagnosticRunnerService = {
 
     const isCorrect = evalResult === 'CORRECT';
     const rawScore = isCorrect ? maxScore : 0;
+
+    // Authoritative state transition:
+    // - Correct answers never promote unmastered states to MASTERED from a single diagnostic item
+    // - Correct answers preserve prior MASTERED state
+    // - Incorrect answers transition to DEVELOPING (GAP)
+    const prevMastery = previousMastery || 'NOT_ASSESSED';
+    let newMastery = 'DEVELOPING';
+    let newGap = 'GAP';
+
+    if (isCorrect) {
+      newMastery = prevMastery === 'MASTERED' ? 'MASTERED' : 'SECURE';
+      newGap = 'ON_TRACK';
+    } else {
+      newMastery = 'DEVELOPING';
+      newGap = 'GAP';
+    }
 
     // Update local storage session state if available
     const hasLocalStorage = typeof localStorage !== 'undefined';
@@ -359,7 +385,7 @@ export const diagnosticRunnerService = {
         result: isCorrect ? 'CORRECT' : 'INCORRECT',
         raw_score: rawScore,
         max_score: maxScore,
-        support_level: 'INDEPENDENT',
+        support_level: sanitizedSupport,
         notes: `Submitted: ${trimmedSub} | Evaluation: ${evalResult}`,
         created_at: new Date().toISOString(),
       });
@@ -373,10 +399,10 @@ export const diagnosticRunnerService = {
       raw_score: rawScore,
       max_score: maxScore,
       is_correct: isCorrect,
-      previous_mastery: 'NOT_ASSESSED',
-      new_mastery: isCorrect ? 'SECURE' : 'DEVELOPING',
-      previous_gap: 'NO_DATA',
-      new_gap: isCorrect ? 'ON_TRACK' : 'GAP',
+      previous_mastery: prevMastery,
+      new_mastery: newMastery,
+      previous_gap: prevMastery === 'NOT_ASSESSED' ? 'NO_DATA' : undefined,
+      new_gap: newGap,
       session_completed: sessionCompleted,
       pending_targets_remaining: remainingTargets,
     };
