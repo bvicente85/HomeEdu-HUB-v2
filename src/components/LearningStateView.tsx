@@ -16,6 +16,8 @@ import { curriculumService } from '../lib/curriculumService';
 import { learningStateService } from '../lib/learningStateService';
 import { ParentOverrideModal } from './ParentOverrideModal';
 import { DiagnosticSessionModal } from './DiagnosticSessionModal';
+import { DiagnosticRunner } from './DiagnosticRunner';
+import { DiagnosticResultsModal } from './DiagnosticResultsModal';
 import {
   BookOpen,
   CheckCircle2,
@@ -69,9 +71,11 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
   const [inspectedHistory, setInspectedHistory] = useState<LearningStateHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Modals
+  // Modals & Runner
   const [overrideModalLo, setOverrideModalLo] = useState<LearningObjective | null>(null);
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
+  const [activeRunnerSessionId, setActiveRunnerSessionId] = useState<string | null>(null);
+  const [inspectedResultsSessionId, setInspectedResultsSessionId] = useState<string | null>(null);
 
   // Auto-select first subject
   useEffect(() => {
@@ -286,6 +290,20 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
         <AlertTriangle className="w-8 h-8 text-stone-400 mx-auto mb-2" />
         <p className="text-sm font-medium">Please select a student to view learning states.</p>
       </div>
+    );
+  }
+
+  if (activeRunnerSessionId) {
+    return (
+      <DiagnosticRunner
+        student={student}
+        sessionId={activeRunnerSessionId}
+        onExit={() => setActiveRunnerSessionId(null)}
+        onSessionCompleted={() => {
+          loadStudentLearningData();
+          loadCurriculumData();
+        }}
+      />
     );
   }
 
@@ -794,16 +812,36 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
                     </p>
                   )}
 
-                  <div className="flex items-center gap-4 text-2xs text-stone-400 pt-2 border-t border-stone-100">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Created: {new Date(sess.created_at).toLocaleDateString()}
-                    </span>
-                    {sess.completed_at && (
-                      <span className="flex items-center gap-1 text-emerald-600">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Completed: {new Date(sess.completed_at).toLocaleDateString()}
+                  <div className="pt-3 flex items-center justify-between border-t border-stone-100 flex-wrap gap-2">
+                    <div className="flex items-center gap-3 text-2xs text-stone-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Created: {new Date(sess.created_at).toLocaleDateString()}
                       </span>
+                      {sess.completed_at && (
+                        <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Completed: {new Date(sess.completed_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {sess.status === 'COMPLETED' ? (
+                      <button
+                        onClick={() => setInspectedResultsSessionId(sess.id)}
+                        className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded text-2xs font-semibold transition-colors flex items-center gap-1"
+                      >
+                        <BookOpen className="w-3 h-3" />
+                        <span>View Audit Results</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setActiveRunnerSessionId(sess.id)}
+                        className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded text-2xs font-semibold transition-colors flex items-center gap-1 shadow-2xs"
+                      >
+                        <span>{sess.status === 'IN_PROGRESS' ? 'Resume Assessment' : 'Start Assessment'}</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -855,7 +893,20 @@ export const LearningStateView: React.FC<LearningStateViewProps> = ({
           subject={activeSubject}
           availableObjectives={availableObjectives}
           onClose={() => setIsDiagnosticModalOpen(false)}
-          onCreate={handleCreateDiagnosticSession}
+          onCreated={async () => {
+            const sessions = await learningStateService.getDiagnosticSessions(student.id);
+            setDiagnosticSessions(sessions);
+          }}
+        />
+      )}
+
+      {/* Diagnostic Results Modal */}
+      {inspectedResultsSessionId && (
+        <DiagnosticResultsModal
+          isOpen={Boolean(inspectedResultsSessionId)}
+          student={student}
+          sessionId={inspectedResultsSessionId}
+          onClose={() => setInspectedResultsSessionId(null)}
         />
       )}
     </div>
